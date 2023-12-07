@@ -1,13 +1,14 @@
 const AuthSchema = require("../models/authModel.js");
 const jwt = require("jsonwebtoken");
 const bcrypte = require("bcryptjs");
+const APIError = require("../utils/errors.js");
 
 const register = async (req, res) => {
   try {
     const { username, password, email } = req.body;
     const user = await AuthSchema.findOne({ email });
     if (user) {
-      return res.status(500).json({ message: "This user already exist" });
+      throw new APIError("This user already exist",401)
     }
     if (password.length < 6) {
       return res
