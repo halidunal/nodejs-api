@@ -2,43 +2,35 @@ const AuthSchema = require("../models/authModel.js");
 const jwt = require("jsonwebtoken");
 const bcrypte = require("bcryptjs");
 const APIError = require("../utils/errors.js");
+const Response = require("../utils/response.js");
 
 const register = async (req, res) => {
-  try {
-    const { username, password, email } = req.body;
-    const user = await AuthSchema.findOne({ email });
-    if (user) {
-      throw new APIError("This user already exist",401)
-    }
-    if (password.length < 6) {
-      return res
-        .status(500)
-        .json({ message: "Password cannot be less than 6 characters" });
-    }
-    const passwordHash = await bcrypte.hash(password, 12);
-
-    if (!isEmail(email)) {
-      return res.status(500).json({ message: "Wrong email format" });
-    }
-
-    const newUser = await AuthSchema.create({
-      username,
-      email,
-      password: passwordHash,
-    });
-
-    const token = jwt.sign({ id: newUser._id }, process.env.SECRET_KEY.toString(), {
-      expiresIn: "1h",
-    });
-
-    res.status(201).json({
-      status: "OK",
-      data: newUser,
-      token,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
+  const { username, password, email } = req.body;
+  const user = await AuthSchema.findOne({ email });
+  if (user) {
+    throw new APIError("This user already exist",401)
   }
+  if (password.length < 6) {
+    return new Response(null, "Password cannot be less than 6 characters")
+  }
+  const passwordHash = await bcrypte.hash(password, 12);
+
+  if (!isEmail(email)) {
+    return res.status(500).json({ message: "Wrong email format" });
+  }
+
+  const newUser = await AuthSchema.create({
+    username,
+    email,
+    password: passwordHash,
+  }).then((data) => {
+    // let token = jwt.sign({ id: newUser._id }, process.env.SECRET_KEY.toString(), {
+    //   expiresIn: "1h",
+    // });
+    return new Response(data, "Saved successfully").create(res)
+  }).catch((err) => {
+    throw new APIError("Saved failure",400)
+  });
 };
 
 const login = async (req, res) => {
