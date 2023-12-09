@@ -19,6 +19,16 @@ const AuthSchema = new mongoose.Schema({
     type: Date,
     default: new Date(),
   },
+  reset: {
+    code: {
+      type: String,
+      default: null
+    },
+    time: {
+      type: Date,
+      default: null
+    }
+  }
 });
 
 module.exports = mongoose.model("auth", AuthSchema);

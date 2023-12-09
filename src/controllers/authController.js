@@ -4,6 +4,9 @@ const bcrypte = require("bcryptjs");
 const APIError = require("../utils/errors.js");
 const Response = require("../utils/response.js");
 const { createToken } = require("../middlewares/authToken.js");
+const crypto = require("crypto");
+const sendEmail = require("../utils/mailSender.js");
+const moment = require("moment")
 
 const register = async (req, res) => {
   const { username, password, email } = req.body;
@@ -49,4 +52,31 @@ const token = async (req, res) => {
   return new Response(req.user).success(res)
 }
 
-module.exports = { register, login, token };
+const forgotPassword = async (req, res) => {
+  const { email } = req.body
+  const user = await AuthSchema.findOne({email}).select("username email");
+
+  if(!user) return new APIError("Invalid user",400);
+
+  const resetCode = crypto.randomBytes(3).toString("hex");
+  await sendEmail({
+    from: process.env.EMAIL_USER,
+    to: user.email,
+    subject: "Password Reset",
+    text: `Your password reset code: ${resetCode}`
+  })
+
+  await user.updateOne(
+    {email},
+    {
+      reset: {
+        code: resetCode,
+        time: moment(new Date()).add(15, "minute").format("YYYY-MM-DD HH:mm:ss")
+      }
+    }
+  )
+
+  return new Response(true, "Please check your emails").success(res)
+}
+
+module.exports = { register, login, token, forgotPassword };
