@@ -25,7 +25,7 @@ const AuthSchema = new mongoose.Schema({
       default: null
     },
     time: {
-      type: Date,
+      type: String,
       default: null
     }
   }

@@ -32,4 +32,18 @@ const checkToken = async (req,res,next) => {
     })
 }
 
-module.exports = { createToken, checkToken }
+const createTempToken = async(userId,email) => {
+    return await jwt.sign({sub: userId, email},process.env.TEMP_SECRET_KEY, {expiresIn: "3m"});
+}
+
+const decodeTempToken = async (tempToken) => {
+    let user;
+    await jwt.verify(tempToken, process.env.TEMP_SECRET_KEY, async (err, decode) => {
+        if(err) throw new APIError("Invalid token",401)
+        user = await AuthSchema.findById(decode.sub).select("_id username email");
+        if(!user) throw new APIError("Invalid token, user not found",401)
+    })
+    return user
+}
+
+module.exports = { createToken, checkToken, createTempToken, decodeTempToken }
